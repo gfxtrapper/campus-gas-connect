@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Flame, MapPin, ShoppingBag, User, LogOut } from "lucide-react";
+import { Menu, X, Flame, MapPin, ShoppingBag, User, LogOut, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -105,6 +105,12 @@ export function Header() {
                     My Profile
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link to="/create-listing">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Listing
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -176,6 +182,12 @@ export function Header() {
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
+                  <Link to="/create-listing" onClick={() => setIsOpen(false)} className="w-full">
+                    <Button variant="flame" className="w-full">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Listing
+                    </Button>
+                  </Link>
                   <Button 
                     variant="outline" 
                     className="w-full" 
