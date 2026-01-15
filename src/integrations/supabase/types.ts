@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      listings: {
+        Row: {
+          brand: string | null
+          created_at: string
+          cylinder_size: Database["public"]["Enums"]["cylinder_size"]
+          description: string | null
+          id: string
+          image_url: string | null
+          is_refill: boolean
+          location: string | null
+          price: number
+          quantity: number
+          seller_id: string
+          status: Database["public"]["Enums"]["listing_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          cylinder_size: Database["public"]["Enums"]["cylinder_size"]
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_refill?: boolean
+          location?: string | null
+          price: number
+          quantity?: number
+          seller_id: string
+          status?: Database["public"]["Enums"]["listing_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          cylinder_size?: Database["public"]["Enums"]["cylinder_size"]
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_refill?: boolean
+          location?: string | null
+          price?: number
+          quantity?: number
+          seller_id?: string
+          status?: Database["public"]["Enums"]["listing_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -80,6 +131,8 @@ export type Database = {
     }
     Enums: {
       app_role: "buyer" | "seller" | "station" | "admin"
+      cylinder_size: "3kg" | "6kg" | "13kg" | "22kg" | "45kg"
+      listing_status: "available" | "sold" | "reserved" | "inactive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -208,6 +261,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["buyer", "seller", "station", "admin"],
+      cylinder_size: ["3kg", "6kg", "13kg", "22kg", "45kg"],
+      listing_status: ["available", "sold", "reserved", "inactive"],
     },
   },
 } as const
