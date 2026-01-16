@@ -26,7 +26,7 @@ export type Database = {
           location: string | null
           price: number
           quantity: number
-          seller_id: string
+          seller_id: string | null
           status: Database["public"]["Enums"]["listing_status"]
           title: string
           updated_at: string
@@ -42,7 +42,7 @@ export type Database = {
           location?: string | null
           price: number
           quantity?: number
-          seller_id: string
+          seller_id?: string | null
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
           updated_at?: string
@@ -58,7 +58,7 @@ export type Database = {
           location?: string | null
           price?: number
           quantity?: number
-          seller_id?: string
+          seller_id?: string | null
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
           updated_at?: string
