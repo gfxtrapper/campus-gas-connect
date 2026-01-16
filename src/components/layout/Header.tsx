@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Flame, MapPin, ShoppingBag, User, LogOut, Plus } from "lucide-react";
+import { Menu, X, Flame, MapPin, ShoppingBag, User, LogOut, Plus, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -106,6 +106,12 @@ export function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link to="/seller-dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Seller Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
                   <Link to="/create-listing">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Listing
@@ -182,6 +188,12 @@ export function Header() {
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
+                  <Link to="/seller-dashboard" onClick={() => setIsOpen(false)} className="w-full">
+                    <Button variant="outline" className="w-full">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Seller Dashboard
+                    </Button>
+                  </Link>
                   <Link to="/create-listing" onClick={() => setIsOpen(false)} className="w-full">
                     <Button variant="flame" className="w-full">
                       <Plus className="mr-2 h-4 w-4" />
