@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
 import CreateListing from "./pages/CreateListing";
+import ListingDetail from "./pages/ListingDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/stations" element={<Stations />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/about" element={<About />} />

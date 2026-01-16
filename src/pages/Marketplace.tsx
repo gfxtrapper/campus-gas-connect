@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ type CylinderSize = "3kg" | "6kg" | "13kg" | "22kg" | "45kg";
 const CYLINDER_SIZES: CylinderSize[] = ["3kg", "6kg", "13kg", "22kg", "45kg"];
 
 const Marketplace = () => {
+  const navigate = useNavigate();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -269,7 +271,8 @@ const Marketplace = () => {
                 {filteredListings.map((listing) => (
                   <div
                     key={listing.id}
-                    className="group rounded-2xl bg-background p-4 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1"
+                    onClick={() => navigate(`/listing/${listing.id}`)}
+                    className="group rounded-2xl bg-background p-4 shadow-card hover:shadow-elevated transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                   >
                     {/* Image */}
                     <div className="relative aspect-square rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4">
@@ -330,9 +333,16 @@ const Marketplace = () => {
                         </span>
                       </div>
 
-                      <Button variant="flame" className="w-full mt-3">
+                      <Button 
+                        variant="flame" 
+                        className="w-full mt-3"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/listing/${listing.id}`);
+                        }}
+                      >
                         <Flame className="h-4 w-4 mr-2" />
-                        Order Now
+                        View Details
                       </Button>
                     </div>
                   </div>
