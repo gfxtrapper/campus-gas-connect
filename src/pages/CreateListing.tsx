@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Flame, Package, MapPin, DollarSign, ImageIcon, Loader2, AlertCircle } from "lucide-react";
+import { Flame, Package, MapPin, DollarSign, ImageIcon, Loader2, AlertCircle, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,9 @@ const CreateListing = () => {
   const [checkingRole, setCheckingRole] = useState(true);
   const [hasSellerRole, setHasSellerRole] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ListingFormData, string>>>({});
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -87,6 +90,97 @@ const CreateListing = () => {
 
     checkSellerRole();
   }, [user, navigate]);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, WebP, or GIF image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Create unique file path: user_id/timestamp_filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('listing-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('listing-images')
+        .getPublicUrl(filePath);
+
+      setImageUrl(publicUrl);
+      setImagePreview(publicUrl);
+      
+      toast({
+        title: "Image uploaded!",
+        description: "Your image has been uploaded successfully.",
+      });
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (!user || !imageUrl) return;
+
+    // Extract file path from URL
+    const urlParts = imageUrl.split('/listing-images/');
+    if (urlParts.length < 2) {
+      setImageUrl("");
+      setImagePreview(null);
+      return;
+    }
+
+    const filePath = urlParts[1];
+    
+    try {
+      await supabase.storage
+        .from('listing-images')
+        .remove([filePath]);
+    } catch (error) {
+      console.error("Error removing image:", error);
+    }
+
+    setImageUrl("");
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const validateForm = (): boolean => {
     const formData = {
@@ -368,27 +462,65 @@ const CreateListing = () => {
                   </p>
                 </div>
 
-                {/* Image URL */}
+                {/* Image Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="imageUrl"
-                      type="url"
-                      placeholder="https://example.com/image.jpg"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      disabled={loading}
-                      className={`pl-10 ${errors.image_url ? "border-destructive" : ""}`}
-                    />
-                  </div>
+                  <Label>Product Image</Label>
+                  
+                  {/* Image Preview */}
+                  {imagePreview ? (
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted">
+                      <img 
+                        src={imagePreview} 
+                        alt="Listing preview" 
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemoveImage}
+                        disabled={loading || uploading}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div 
+                      className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">Uploading...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Click to upload an image
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            JPEG, PNG, WebP or GIF (max 5MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={loading || uploading}
+                  />
+                  
                   {errors.image_url && (
                     <p className="text-sm text-destructive">{errors.image_url}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    Optional: Add a URL to an image of your cylinder
-                  </p>
                 </div>
 
                 {/* Is Refill Toggle */}
