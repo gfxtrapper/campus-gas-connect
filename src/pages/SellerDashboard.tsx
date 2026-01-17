@@ -298,6 +298,13 @@ const SellerDashboard = () => {
                                 View
                               </DropdownMenuItem>
                               <DropdownMenuItem 
+                                onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
                                 onClick={() => handleStatusToggle(listing)}
                                 className="cursor-pointer"
                               >

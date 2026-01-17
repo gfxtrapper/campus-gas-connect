@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
 import CreateListing from "./pages/CreateListing";
+import EditListing from "./pages/EditListing";
 import ListingDetail from "./pages/ListingDetail";
 import SellerDashboard from "./pages/SellerDashboard";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/create-listing" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+          <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
           <Route path="/seller-dashboard" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
