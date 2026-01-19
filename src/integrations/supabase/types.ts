@@ -22,6 +22,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          images: Json | null
           is_refill: boolean
           location: string | null
           price: number
@@ -38,6 +39,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          images?: Json | null
           is_refill?: boolean
           location?: string | null
           price: number
@@ -54,6 +56,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          images?: Json | null
           is_refill?: boolean
           location?: string | null
           price?: number

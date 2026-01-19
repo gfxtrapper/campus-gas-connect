@@ -22,6 +22,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
+import ImageGallery from "@/components/listings/ImageGallery";
 
 type Listing = Tables<"listings">;
 type Profile = Tables<"profiles">;
@@ -197,21 +198,22 @@ const ListingDetail = () => {
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Image Section */}
             <div className="space-y-4">
-              <div className="relative aspect-square rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 overflow-hidden">
-                {listing.image_url ? (
-                  <img
-                    src={listing.image_url}
-                    alt={listing.title}
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <span className="text-9xl">{listing.is_refill ? "⛽" : "🔥"}</span>
-                  </div>
-                )}
+              <div className="relative">
+                {/* Get images array or fallback to single image_url */}
+                <ImageGallery
+                  images={
+                    listing.images && Array.isArray(listing.images) && listing.images.length > 0
+                      ? (listing.images as string[])
+                      : listing.image_url
+                      ? [listing.image_url]
+                      : []
+                  }
+                  title={listing.title}
+                  fallbackEmoji={listing.is_refill ? "⛽" : "🔥"}
+                />
                 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                <div className="absolute top-4 left-4 flex flex-wrap gap-2 z-10">
                   <Badge className="bg-secondary text-secondary-foreground">
                     {listing.cylinder_size}
                   </Badge>
@@ -223,7 +225,7 @@ const ListingDetail = () => {
                 </div>
                 
                 {/* Actions */}
-                <div className="absolute top-4 right-4 flex gap-2">
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
                   <Button size="icon" variant="secondary" className="h-10 w-10 rounded-full">
                     <Heart className="h-5 w-5" />
                   </Button>

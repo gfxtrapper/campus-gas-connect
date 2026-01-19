@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -15,12 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Flame, Package, MapPin, DollarSign, ImageIcon, Loader2, AlertCircle, Upload, X } from "lucide-react";
+import { Flame, Package, MapPin, DollarSign, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import MultiImageUpload from "@/components/listings/MultiImageUpload";
 
 const CYLINDER_SIZES = ["3kg", "6kg", "13kg", "22kg", "45kg"] as const;
 
@@ -33,7 +34,6 @@ const listingSchema = z.object({
   location: z.string().trim().max(100, "Location must be less than 100 characters").optional(),
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(1000, "Quantity is too high"),
   is_refill: z.boolean(),
-  image_url: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
 });
 
 type ListingFormData = z.infer<typeof listingSchema>;
@@ -48,8 +48,7 @@ const CreateListing = () => {
   const [hasSellerRole, setHasSellerRole] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ListingFormData, string>>>({});
   const [uploading, setUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<string[]>([]);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -60,7 +59,6 @@ const CreateListing = () => {
   const [location, setLocation] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [isRefill, setIsRefill] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -91,9 +89,8 @@ const CreateListing = () => {
     checkSellerRole();
   }, [user, navigate]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    if (!user) return null;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -103,7 +100,7 @@ const CreateListing = () => {
         description: "Please upload a JPEG, PNG, WebP, or GIF image.",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     // Validate file size (max 5MB)
@@ -114,7 +111,7 @@ const CreateListing = () => {
         description: "Please upload an image smaller than 5MB.",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     setUploading(true);
@@ -135,13 +132,12 @@ const CreateListing = () => {
         .from('listing-images')
         .getPublicUrl(filePath);
 
-      setImageUrl(publicUrl);
-      setImagePreview(publicUrl);
-      
       toast({
         title: "Image uploaded!",
         description: "Your image has been uploaded successfully.",
       });
+
+      return publicUrl;
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
@@ -149,36 +145,9 @@ const CreateListing = () => {
         description: error.message || "Failed to upload image",
         variant: "destructive",
       });
+      return null;
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleRemoveImage = async () => {
-    if (!user || !imageUrl) return;
-
-    // Extract file path from URL
-    const urlParts = imageUrl.split('/listing-images/');
-    if (urlParts.length < 2) {
-      setImageUrl("");
-      setImagePreview(null);
-      return;
-    }
-
-    const filePath = urlParts[1];
-    
-    try {
-      await supabase.storage
-        .from('listing-images')
-        .remove([filePath]);
-    } catch (error) {
-      console.error("Error removing image:", error);
-    }
-
-    setImageUrl("");
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
     }
   };
 
@@ -192,7 +161,6 @@ const CreateListing = () => {
       location: location.trim() || undefined,
       quantity: parseInt(quantity) || 1,
       is_refill: isRefill,
-      image_url: imageUrl.trim() || undefined,
     };
 
     const result = listingSchema.safeParse(formData);
@@ -229,7 +197,8 @@ const CreateListing = () => {
         location: location.trim() || null,
         quantity: parseInt(quantity),
         is_refill: isRefill,
-        image_url: imageUrl.trim() || null,
+        image_url: images[0] || null,
+        images: images,
         status: "available",
       });
 
@@ -464,63 +433,15 @@ const CreateListing = () => {
 
                 {/* Image Upload */}
                 <div className="space-y-2">
-                  <Label>Product Image</Label>
-                  
-                  {/* Image Preview */}
-                  {imagePreview ? (
-                    <div className="relative w-full aspect-video rounded-lg overflow-hidden border bg-muted">
-                      <img 
-                        src={imagePreview} 
-                        alt="Listing preview" 
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2"
-                        onClick={handleRemoveImage}
-                        disabled={loading || uploading}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div 
-                      className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {uploading ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">Uploading...</p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <Upload className="h-8 w-8 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Click to upload an image
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            JPEG, PNG, WebP or GIF (max 5MB)
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    disabled={loading || uploading}
+                  <Label>Product Images</Label>
+                  <MultiImageUpload
+                    images={images}
+                    onImagesChange={setImages}
+                    onUpload={handleImageUpload}
+                    uploading={uploading}
+                    disabled={loading}
+                    maxImages={5}
                   />
-                  
-                  {errors.image_url && (
-                    <p className="text-sm text-destructive">{errors.image_url}</p>
-                  )}
                 </div>
 
                 {/* Is Refill Toggle */}
