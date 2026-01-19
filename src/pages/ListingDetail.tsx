@@ -21,13 +21,17 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 type Listing = Tables<"listings">;
+type Profile = Tables<"profiles">;
 
 const ListingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [listing, setListing] = useState<Listing | null>(null);
+  const [sellerProfile, setSellerProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +57,18 @@ const ListingDetail = () => {
         setError("Listing not found");
       } else {
         setListing(data);
+        // Fetch seller profile
+        if (data.seller_id) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", data.seller_id)
+            .maybeSingle();
+          
+          if (profileData) {
+            setSellerProfile(profileData);
+          }
+        }
       }
     } catch (err) {
       console.error("Error fetching listing:", err);
@@ -60,6 +76,50 @@ const ListingDetail = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatPhoneForWhatsApp = (phone: string) => {
+    // Remove all non-numeric characters
+    let cleaned = phone.replace(/\D/g, "");
+    
+    // Handle Kenyan numbers
+    if (cleaned.startsWith("0")) {
+      cleaned = "254" + cleaned.slice(1);
+    } else if (!cleaned.startsWith("254") && cleaned.length === 9) {
+      cleaned = "254" + cleaned;
+    }
+    
+    return cleaned;
+  };
+
+  const handleWhatsAppContact = () => {
+    if (!sellerProfile?.phone) {
+      toast({
+        title: "Contact unavailable",
+        description: "The seller hasn't added their phone number yet.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const phone = formatPhoneForWhatsApp(sellerProfile.phone);
+    const message = encodeURIComponent(
+      `Hi! I'm interested in your listing "${listing?.title}" on GasBora. Is it still available?`
+    );
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+  };
+
+  const handleCallSeller = () => {
+    if (!sellerProfile?.phone) {
+      toast({
+        title: "Contact unavailable",
+        description: "The seller hasn't added their phone number yet.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    window.location.href = `tel:${sellerProfile.phone}`;
   };
 
   const formatPrice = (price: number) => {
@@ -248,18 +308,42 @@ const ListingDetail = () => {
 
               <Separator />
 
+              {/* Seller Info */}
+              {sellerProfile && (
+                <div className="bg-background rounded-xl p-4 border">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="font-semibold text-primary">
+                        {sellerProfile.full_name?.charAt(0)?.toUpperCase() || "S"}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{sellerProfile.full_name || "Seller"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {sellerProfile.phone ? "Contact available" : "No contact info"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* CTA Buttons */}
               <div className="space-y-3">
-                <Button variant="flame" size="lg" className="w-full">
-                  <Flame className="h-5 w-5 mr-2" />
-                  Order Now
+                <Button 
+                  variant="flame" 
+                  size="lg" 
+                  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white"
+                  onClick={handleWhatsAppContact}
+                >
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  WhatsApp Seller
                 </Button>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" onClick={handleCallSeller}>
                     <Phone className="h-4 w-4 mr-2" />
                     Call Seller
                   </Button>
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" onClick={handleWhatsAppContact}>
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Message
                   </Button>
