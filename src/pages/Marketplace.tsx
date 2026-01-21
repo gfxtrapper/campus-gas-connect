@@ -37,9 +37,11 @@ const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sizeFilter, setSizeFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [maxPrice, setMaxPrice] = useState(10000);
+  const [uniqueLocations, setUniqueLocations] = useState<string[]>([]);
 
   useEffect(() => {
     fetchListings();
@@ -58,11 +60,15 @@ const Marketplace = () => {
 
       setListings(data || []);
       
-      // Calculate max price for slider
+      // Calculate max price for slider and extract unique locations
       if (data && data.length > 0) {
         const highest = Math.max(...data.map((l) => l.price));
         setMaxPrice(Math.ceil(highest / 1000) * 1000 || 10000);
         setPriceRange([0, Math.ceil(highest / 1000) * 1000 || 10000]);
+        
+        // Extract unique locations
+        const locations = [...new Set(data.map((l) => l.location).filter(Boolean) as string[])];
+        setUniqueLocations(locations.sort());
       }
     } catch (error) {
       console.error("Error fetching listings:", error);
@@ -83,7 +89,8 @@ const Marketplace = () => {
         (typeFilter === "refill" && listing.is_refill) ||
         (typeFilter === "full" && !listing.is_refill);
       const matchesPrice = listing.price >= priceRange[0] && listing.price <= priceRange[1];
-      return matchesSearch && matchesSize && matchesType && matchesPrice;
+      const matchesLocation = locationFilter === "all" || listing.location === locationFilter;
+      return matchesSearch && matchesSize && matchesType && matchesPrice && matchesLocation;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -152,6 +159,20 @@ const Marketplace = () => {
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="full">Full Cylinder</SelectItem>
                     <SelectItem value="refill">Refill Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={locationFilter} onValueChange={setLocationFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Locations</SelectItem>
+                    {uniqueLocations.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 
@@ -235,6 +256,41 @@ const Marketplace = () => {
                           </Button>
                         </div>
                       </div>
+
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Location</h4>
+                        <Select value={locationFilter} onValueChange={setLocationFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Locations</SelectItem>
+                            {uniqueLocations.map((location) => (
+                              <SelectItem key={location} value={location}>
+                                {location}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Active Filters & Clear */}
+                      {(sizeFilter !== "all" || typeFilter !== "all" || locationFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+                        <div className="pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              setSizeFilter("all");
+                              setTypeFilter("all");
+                              setLocationFilter("all");
+                              setPriceRange([0, maxPrice]);
+                            }}
+                          >
+                            Clear All Filters
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -355,7 +411,7 @@ const Marketplace = () => {
                 </div>
                 <h3 className="font-display font-semibold text-lg mb-2">No listings found</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  {searchQuery || sizeFilter !== "all" || typeFilter !== "all"
+                  {searchQuery || sizeFilter !== "all" || typeFilter !== "all" || locationFilter !== "all"
                     ? "Try adjusting your filters or search query to find more listings."
                     : "There are no gas cylinders available at the moment. Check back later!"}
                 </p>
